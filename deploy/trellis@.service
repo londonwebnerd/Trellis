@@ -1,0 +1,59 @@
+# systemd *template* unit: run one instance per site (clients, friends…).
+#
+#   sudo cp deploy/trellis@.service /etc/systemd/system/
+#   sudo mkdir -p /etc/trellis
+#   sudo cp .env.example /etc/trellis/alice.env   # set PORT + DATA_DIR
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now trellis@alice
+#   journalctl -u trellis@alice -f
+#
+# All instances share one copy of the code in /opt/trellis; each has
+# its own env file, port and data folder. See docs/multiple-sites.md.
+
+[Unit]
+Description=Trellis site: %i
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/trellis
+Environment=NODE_ENV=production
+Environment=TRUST_PROXY=1
+Environment=DATA_DIR=/var/lib/trellis/%i
+# Each site is configured only by its own env file, never /opt/trellis/.env.
+Environment=TRELLIS_ENV_FILE=none
+EnvironmentFile=/etc/trellis/%i.env
+ExecStart=/usr/bin/node server/src/index.js
+Restart=on-failure
+RestartSec=3
+
+# Hardening (see trellis.service). For stronger isolation between clients,
+# give each site its own user: create one with `useradd --system trellis-alice`
+# and override User= with `systemctl edit trellis@alice`.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+UMask=0077
+MemoryMax=512M
+StateDirectory=trellis/%i
+ReadWritePaths=/var/lib/trellis/%i
+
+[Install]
+WantedBy=multi-user.target

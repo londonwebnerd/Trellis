@@ -1,0 +1,50 @@
+# systemd unit for Trellis.
+#   sudo cp deploy/trellis.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now trellis
+#   journalctl -u trellis -f     # logs
+#
+# Adjust User and WorkingDirectory to match your server.
+
+[Unit]
+Description=Trellis link-in-bio page
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/trellis
+Environment=NODE_ENV=production
+# The app reads /opt/trellis/.env itself (if present).
+ExecStart=/usr/bin/node server/src/index.js
+Environment=TRUST_PROXY=1
+Restart=on-failure
+RestartSec=3
+
+# Hardening: the app only needs to write to its data directory. The code in
+# /opt/trellis should be owned by root (see docs/deployment.md), so the app
+# can't modify itself even if it were compromised.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+RestrictNamespaces=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+UMask=0077
+MemoryMax=512M
+ReadWritePaths=/opt/trellis/server/data
+
+[Install]
+WantedBy=multi-user.target

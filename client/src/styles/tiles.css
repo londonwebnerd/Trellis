@@ -1,0 +1,2307 @@
+/* Tile internals. Each tile fills its .tile-cell. */
+
+/* ------------------------------ Brand badge ----------------------------- */
+
+.brand-badge {
+  display: inline-grid;
+  place-items: center;
+  border-radius: min(12px, var(--radius-sm));
+  flex-shrink: 0;
+  background: var(--badge-bg);
+  color: var(--badge-fg);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+/* Black logos (X, Threads, TikTok…) need an outline on dark backgrounds. */
+:root[data-theme='dark'] .brand-badge {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.ui-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: var(--card-muted);
+  color: var(--text);
+}
+
+.ui-badge--lg {
+  width: 36px;
+  height: 36px;
+  border-radius: 11px;
+}
+
+/* ------------------------------- Link card ------------------------------ */
+
+.tile-card {
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+
+.tile-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  /* The header is a size container so the call-to-action pill can hide
+     itself when there isn't room next to the badge (narrow phone cards). */
+  container: tile-head / inline-size;
+}
+
+@container tile-head (max-width: 150px) {
+  .tile-pill:not(.tile-pill--button) {
+    display: none;
+  }
+}
+
+.tile-card__arrow {
+  color: var(--muted);
+  opacity: 0.7;
+}
+
+.tile-card__text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tile-card__link {
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+/* "Stretched link": the anchor's pseudo-element covers the whole card. */
+.tile-card__link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: var(--radius);
+}
+
+.tile-card__subtitle {
+  color: var(--muted);
+  min-width: 0;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile-card__preview {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+}
+
+/* Without a preview, push the text to the bottom of the card (link-in-bio style). */
+.tile-card:not(:has(.tile-card__preview)) .tile-card__text {
+  margin-top: auto;
+}
+
+/* Wide tiles with a preview: text bottom-left, preview fills the right half. */
+/* Bar (1-row) tiles: a horizontal, Linktree-style button. */
+.tile-card--bar {
+  flex-direction: row;
+  align-items: center;
+  padding: 0 18px 0 12px;
+  gap: 12px;
+}
+
+.tile-card--bar .tile-card__head {
+  align-items: center;
+  /* Sized by its content here, so it can't be a size container. */
+  container-type: normal;
+}
+
+.tile-card--bar .tile-card__text {
+  flex: 1;
+  margin-top: 0 !important;
+  flex-direction: row;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.tile-card--bar .tile-card__link {
+  -webkit-line-clamp: 1;
+}
+
+.tile-card--bar .brand-badge {
+  border-radius: 10px;
+}
+
+.tile-card--wide:has(.tile-card__preview) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-rows: auto 1fr;
+  column-gap: 16px;
+  row-gap: 10px;
+}
+
+.tile-card--wide:has(.tile-card__preview) .tile-card__head { grid-column: 1; grid-row: 1; }
+.tile-card--wide:has(.tile-card__preview) .tile-card__text { grid-column: 1; grid-row: 2; align-self: end; }
+.tile-card--wide .tile-card__preview { grid-column: 2; grid-row: 1 / span 2; height: 100%; }
+
+/* Optional footer row (e.g. the email tile's copy button). */
+.tile-card__footer {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.tile-card__footer .tile-pill {
+  max-width: 100%;
+}
+
+/* Anything interactive inside a card sits above the stretched link. */
+.tile-interactive {
+  position: relative;
+  z-index: 2;
+}
+
+.tile-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  /* Readable brand colours from LinkCard (pillColors); the accent otherwise. */
+  background: var(--pill-bg, var(--brand, var(--accent)));
+  color: var(--pill-fg, var(--on-accent, #fff));
+  white-space: nowrap;
+}
+
+.tile-card[data-platform='x'] .tile-pill,
+.tile-card[data-platform='threads'] .tile-pill,
+.tile-card[data-platform='github'] .tile-pill,
+.tile-card[data-platform='patreon'] .tile-pill,
+.tile-card[data-platform='tiktok'] .tile-pill,
+.tile-card[data-platform='medium'] .tile-pill {
+  background: var(--text);
+  color: var(--card);
+}
+
+.tile-pill--button {
+  border: 0;
+  cursor: pointer;
+  background: var(--card-muted);
+  color: var(--text);
+  align-self: flex-start;
+}
+
+.tile-empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 16px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* An unfinished card ("Upload a PDF", "Paste a Spotify link"…) or one that
+   failed to render is a hint for the editor only: visitors don't see it. In
+   the editor the tile sits inside .tile-inert, so this never matches there. */
+.tile-cell:has(> .tile-empty) {
+  display: none;
+}
+
+/* -------------------------------- Embeds -------------------------------- */
+
+.embed-frame {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+}
+
+/* Spotify / YouTube: fill the whole tile. */
+.embed-frame--fill {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+}
+
+.type-spotify,
+.type-youtube {
+  background: var(--card-muted);
+}
+
+/* Posts / timelines under the card header. */
+.embed-frame--post {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--card-muted);
+}
+
+.insta-embeds {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(var(--n, 1), minmax(0, 1fr));
+  gap: 8px;
+}
+
+.embed-frame--instagram {
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background: var(--card-muted);
+}
+
+/* Instagram live feed thumbnails. */
+.insta-grid {
+  display: grid;
+  gap: 6px;
+  flex: 1;
+  min-height: 0;
+  grid-template-columns: repeat(var(--cols, 3), minmax(0, 1fr));
+  align-content: start;
+}
+
+/* Feed without header: the photos fill the whole tile. */
+.insta-grid--bare {
+  position: absolute;
+  inset: 0;
+  padding: 6px;
+  overflow: hidden;
+}
+
+.insta-grid__item {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--card-muted);
+}
+
+.insta-grid__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.25s ease;
+}
+
+.insta-grid__item:hover img {
+  transform: scale(1.05);
+}
+
+/* ------------------------------ Feed posts ------------------------------ */
+
+.feed-post {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--card-muted);
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.feed-post__text {
+  margin: 0;
+  flex: 0 1 auto;
+  min-height: 0;
+  white-space: pre-wrap;
+  overflow: hidden;
+  /* If the card is too short for the clamp, fade out instead of cutting a line in half. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 1.2em), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 1.2em), transparent);
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.shape-tall .feed-post__text,
+.shape-lg .feed-post__text {
+  -webkit-line-clamp: 7;
+}
+
+.feed-post time {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: auto;
+}
+
+.feed-post__image {
+  width: 100%;
+  max-height: 55%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.feed-post--loading {
+  background: linear-gradient(90deg, var(--card-muted), var(--border), var(--card-muted));
+  background-size: 200% 100%;
+  animation: shimmer 1.2s infinite linear;
+}
+
+.feed-post--error {
+  color: var(--muted);
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ------------------------------ Text tiles ------------------------------ */
+
+.tile-text {
+  height: 100%;
+  padding: 20px 22px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+  /* Soft fade at the bottom edge when there's more text than fits. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 20px), transparent);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.shape-bar .tile-text {
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  overflow: hidden;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+/* One-row text card: everything on one line, separated by dots. */
+.tile-text__line {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tile-text__line > *,
+.tile-text__line li {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.tile-text__line > * + *::before,
+.tile-text__line li + li::before {
+  content: ' · ';
+  color: var(--muted);
+  font-weight: 400;
+}
+
+/* Shared rich-text typography (tiles and the editor). */
+.rich-text > :first-child {
+  margin-top: 0;
+}
+
+.rich-text > :last-child {
+  margin-bottom: 0;
+}
+
+.rich-text p,
+.rich-text ul,
+.rich-text ol,
+.rich-text blockquote {
+  margin: 0 0 0.6em;
+}
+
+.rich-text h3 {
+  font-size: 1.3em;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  margin: 0 0 0.4em;
+}
+
+.rich-text h4 {
+  font-size: 1.05em;
+  margin: 0 0 0.3em;
+}
+
+.rich-text ul,
+.rich-text ol {
+  padding-left: 1.3em;
+}
+
+.rich-text li + li {
+  margin-top: 0.15em;
+}
+
+.rich-text a {
+  /* The accent, shaded until it reads on the card (cssVars → --link-*). */
+  color: var(--link, color-mix(in srgb, var(--accent) 70%, var(--text)));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  position: relative;
+  z-index: 2;
+}
+
+.rich-text blockquote {
+  padding-left: 0.9em;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+}
+
+.rich-text code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--card-muted);
+}
+
+/* ------------------------------ Link lists ------------------------------ */
+
+.link-list {
+  height: 100%;
+  padding: 16px 16px 18px;
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 16px), transparent);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+}
+
+.link-list__title {
+  margin: 2px 4px 0;
+  font-size: 15px;
+}
+
+.link-list ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+/* Grid/flex children default to min-width: auto, which lets a long label
+   push the card wider. Allow them to shrink so the label truncates. */
+.link-list li {
+  min-width: 0;
+}
+
+/* Wider lists flow into two columns. */
+.w-3 .link-list ul,
+.w-4 .link-list ul {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.link-list__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px 9px 9px;
+  border-radius: var(--radius-sm);
+  background: var(--card-muted);
+  font-weight: 600;
+  font-size: 14px;
+  transition: background 0.15s, transform 0.15s;
+}
+
+.link-list__item:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card-muted));
+  transform: translateX(2px);
+}
+
+.link-list__item .brand-badge {
+  border-radius: 8px;
+}
+
+.link-list__label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-list__item svg:last-child {
+  color: var(--muted);
+}
+
+.shape-bar .link-list {
+  flex-direction: row;
+  align-items: center;
+  padding: 0 10px;
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.shape-bar .link-list ul {
+  display: flex;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.shape-bar .link-list li {
+  flex: 1 1 0;
+}
+
+.shape-bar .link-list__title {
+  display: none;
+}
+
+.tile-heading {
+  overflow-wrap: anywhere;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  margin: 0;
+  padding: 0 4px 2px;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+/* ----------------------------- Image tiles ------------------------------ */
+
+.tile-image {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
+.tile-image__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tile-image__caption {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  max-width: calc(100% - 24px);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------ Apple Music ----------------------------- */
+
+.type-applemusic {
+  background: var(--card-muted);
+}
+
+/* ------------------------------ GitHub repos ---------------------------- */
+
+.gh-repos,
+.blog-posts {
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 14px), transparent);
+}
+
+.gh-repos {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  overflow: hidden;
+}
+
+.gh-repos--grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.gh-repo {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--card-muted);
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.gh-repo:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card-muted));
+}
+
+.gh-repo strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gh-repo__desc {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.gh-repo__meta {
+  display: flex;
+  gap: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Long call-to-action labels ("Buy me a coffee") stay on one line. */
+.tile-pill {
+  max-width: calc(100% - 52px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Buy Me a Coffee's yellow needs dark text. */
+.tile-card[data-platform='buymeacoffee'] .tile-pill {
+  color: #000;
+}
+
+/* ------------------------------ Blog posts ------------------------------ */
+
+.blog-posts {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  overflow: hidden;
+}
+
+.blog-post {
+  display: grid;
+  gap: 3px;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  background: var(--card-muted);
+  font-size: 13px;
+  transition: background 0.15s;
+}
+
+.blog-post:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--card-muted));
+}
+
+.blog-post strong {
+  line-height: 1.3;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.blog-post__image {
+  width: 100%;
+  aspect-ratio: 16 / 7;
+  object-fit: cover;
+  border-radius: calc(var(--radius-sm) * 0.7);
+  margin-bottom: 4px;
+}
+
+.blog-post__excerpt {
+  color: var(--muted);
+  font-size: 12px;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.blog-post time {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+:root[data-cards='crystal'] .blog-post {
+  background: color-mix(in srgb, var(--card) 38%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+:root[data-cards='flat'] .blog-post {
+  background: var(--card);
+}
+
+/* Tumblr's brand navy reads better than its bright accent on pills. */
+.tile-card[data-platform='tumblr'] .tile-pill {
+  background: #36465d;
+}
+
+/* Click-to-load notice shown instead of a third-party player (EmbedFrame). */
+.embed-consent {
+  container-type: size;
+  display: grid;
+  place-items: center;
+  min-height: 72px;
+  padding: 12px;
+  border-radius: var(--radius-sm);
+  background: var(--card-muted);
+  color: var(--text);
+  text-align: center;
+}
+
+.embed-frame--fill.embed-consent {
+  border-radius: 0;
+}
+
+.embed-consent__body {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 280px;
+}
+
+.embed-consent__body > svg {
+  color: var(--muted);
+}
+
+.embed-consent p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.35;
+}
+
+.embed-consent p span {
+  color: var(--muted);
+}
+
+/* The card's title, repeated here: two lines at most. */
+.embed-consent p b {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.embed-consent__button {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--card);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.embed-consent__button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.embed-consent__remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+/* Medium spaces (a booking card under a two-line title): no play icon. */
+@container (max-height: 230px) {
+  .embed-consent__body > svg {
+    display: none;
+  }
+}
+
+/* Small spaces (a 1-row player): just the button. */
+@container (max-height: 170px) {
+  .embed-consent__body > svg,
+  .embed-consent p span,
+  .embed-consent__remember {
+    display: none;
+  }
+}
+
+@container (max-height: 90px) {
+  .embed-consent p {
+    display: none;
+  }
+
+  /* One line only: "Load Apple Mu…" rather than a button taller than the card. */
+  .embed-consent__button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 6px 12px;
+  }
+
+  .embed-consent__body {
+    grid-auto-flow: column;
+  }
+}
+
+/* ======================================================================== */
+/*  Newer cards, visitor dialogs, locks, spotlights, buttons, social icons  */
+/* ======================================================================== */
+
+.visually-hidden {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Custom thumbnail instead of a brand badge (link cards). */
+.tile-thumb {
+  flex-shrink: 0;
+  border-radius: min(12px, var(--radius-sm));
+  object-fit: cover;
+  background: var(--card-muted);
+}
+
+.ui-badge--tile {
+  border-radius: min(12px, var(--radius-sm));
+}
+
+.embed-frame--pinterest,
+.type-tiktok,
+.type-twitch,
+.type-soundcloud,
+.type-bandcamp,
+.type-pinterest {
+  background: var(--card-muted);
+}
+
+.embed-frame--booking {
+  min-height: 320px;
+  background: var(--card);
+}
+
+/* The click-to-load notice fits whatever space the card has (the 320 px is
+   for the calendar itself). */
+.embed-frame--booking.embed-consent {
+  min-height: 0;
+}
+
+/* ---------------------------------- Map --------------------------------- */
+
+.map-tile {
+  position: absolute;
+  inset: 0;
+}
+
+.map-tile__label {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: var(--shadow);
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.map-tile__label span {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+
+.map-tile__label small {
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* -------------------------------- Gallery ------------------------------- */
+
+.gallery {
+  position: absolute;
+  inset: 0;
+}
+
+.gallery__item {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  color: #fff;
+}
+
+.gallery__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery__caption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 24px 12px 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.gallery__track {
+  display: flex;
+  height: 100%;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+
+.gallery__track::-webkit-scrollbar {
+  display: none;
+}
+
+.gallery__slide {
+  flex: 0 0 100%;
+  height: 100%;
+  scroll-snap-align: start;
+}
+
+.gallery__nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.88);
+  color: #111;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.gallery:hover .gallery__nav,
+.gallery__nav:focus-visible {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .gallery__nav {
+    opacity: 1;
+  }
+}
+
+.gallery__nav--prev {
+  left: 8px;
+}
+
+.gallery__nav--next {
+  right: 8px;
+}
+
+.gallery__dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  pointer-events: none;
+}
+
+.gallery__dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.4);
+}
+
+.gallery__dots span.is-active {
+  background: #fff;
+}
+
+.gallery--grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: 1fr;
+  gap: 2px;
+}
+
+.gallery--grid.gallery--n1 {
+  grid-template-columns: 1fr;
+}
+
+.gallery--grid.gallery--n2,
+.gallery--grid.gallery--n4 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+/* Counts that don't fill rows of three get their own rows, so there's never
+   an empty cell: 5 = 2 + 3, 7 = 3 + 4, 8 = 4 + 4. */
+.gallery--grid.gallery--n5 {
+  grid-template-columns: repeat(6, 1fr);
+}
+
+.gallery--grid.gallery--n5 > :nth-child(-n + 2) {
+  grid-column: span 3;
+}
+
+.gallery--grid.gallery--n5 > :nth-child(n + 3) {
+  grid-column: span 2;
+}
+
+.gallery--grid.gallery--n7 {
+  grid-template-columns: repeat(12, 1fr);
+}
+
+.gallery--grid.gallery--n7 > :nth-child(-n + 3) {
+  grid-column: span 4;
+}
+
+.gallery--grid.gallery--n7 > :nth-child(n + 4) {
+  grid-column: span 3;
+}
+
+.gallery--grid.gallery--n8 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Wide, short cards (4 × 2): one row of photos instead of thin strips. */
+@container cell (min-aspect-ratio: 5 / 2) {
+  .gallery--grid:not(.gallery--n1) {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+  }
+
+  .gallery--grid > * {
+    grid-column: auto !important;
+  }
+}
+
+/* Tall, narrow cards: photos stack instead of becoming thin strips. */
+@container cell (max-aspect-ratio: 3 / 4) {
+  .gallery--grid.gallery--n2,
+  .gallery--grid.gallery--n3 {
+    grid-template-columns: 1fr;
+  }
+
+  .gallery--grid:is(.gallery--n4, .gallery--n5, .gallery--n6, .gallery--n7, .gallery--n8) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .gallery--grid:is(.gallery--n5, .gallery--n7) > * {
+    grid-column: auto;
+  }
+
+  .gallery--grid:is(.gallery--n5, .gallery--n7) > :first-child {
+    grid-column: span 2;
+  }
+}
+
+.gallery--grid .gallery__caption {
+  display: none;
+}
+
+/* ------------------------------- Countdown ------------------------------ */
+
+.countdown {
+  height: 100%;
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.countdown__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.countdown__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.countdown__clock {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+}
+
+.countdown__clock span {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  padding: 8px 4px;
+  border-radius: var(--radius-sm);
+  background: var(--card-muted);
+  min-width: 0;
+}
+
+.countdown__clock b {
+  font-size: clamp(18px, 4cqi, 30px);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.countdown__clock small,
+.countdown__when {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.countdown__done {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.countdown {
+  container-type: size;
+}
+
+.countdown__button {
+  text-decoration: none;
+}
+
+.countdown--bar {
+  flex-direction: row;
+  align-items: center;
+  padding: 0 16px 0 12px;
+}
+
+.countdown--bar .countdown__head {
+  flex: 1;
+}
+
+.countdown--bar .countdown__clock span {
+  padding: 2px 6px;
+}
+
+.countdown--bar .countdown__clock b {
+  font-size: 15px;
+}
+
+.countdown--bar .countdown__clock small {
+  display: none;
+}
+
+.countdown--sm .countdown__clock {
+  flex-wrap: wrap;
+}
+
+.countdown--sm .countdown__clock span {
+  flex-basis: calc(50% - 3px);
+}
+
+/* ----------------------- Form cards (contact etc.) ---------------------- */
+
+.form-card {
+  height: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.form-card__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  margin-top: auto;
+}
+
+.form-card__text b {
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.form-card__text small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* Long titles and subtitles stop at two lines, so the button always fits. */
+.form-card__text b,
+.form-card__text small {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+
+.form-card__button {
+  text-decoration: none;
+}
+
+.form-card--bar {
+  flex-direction: row;
+  align-items: center;
+  padding: 0 14px 0 12px;
+}
+
+.form-card--bar .ui-badge--lg {
+  width: 34px;
+  height: 34px;
+}
+
+.form-card--bar .form-card__text {
+  flex: 1;
+  margin-top: 0;
+}
+
+.form-card--bar .form-card__text b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.form-card--bar .form-card__button {
+  align-self: center;
+}
+
+.newsletter__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.newsletter__form input,
+.visitor-form input,
+.visitor-form textarea,
+.lock-gate input {
+  flex: 1;
+  min-width: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+}
+
+.newsletter__form input:focus-visible,
+.visitor-form input:focus-visible,
+.visitor-form textarea:focus-visible,
+.lock-gate input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 0;
+  border-color: transparent;
+}
+
+.newsletter__form button,
+.visitor-button,
+.lock-gate__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.newsletter__form button:disabled,
+.visitor-button:disabled,
+.lock-gate__button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.newsletter__form button:focus-visible,
+.visitor-button:focus-visible,
+.lock-gate__button:focus-visible,
+.visitor-dialog__close:focus-visible,
+.share-fab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.visitor-button--secondary {
+  background: var(--card-muted);
+  color: var(--text);
+}
+
+.newsletter__form--compact {
+  flex-wrap: nowrap;
+  flex: 1.3;
+}
+
+.newsletter__form--compact input,
+.newsletter__form--compact button {
+  padding: 6px 10px;
+}
+
+.newsletter__error,
+.visitor-form__error,
+.lock-gate__error {
+  flex-basis: 100%;
+  margin: 0;
+  color: #d70015;
+  font-size: 12px;
+}
+
+:root[data-theme='dark'] .newsletter__error,
+:root[data-theme='dark'] .visitor-form__error,
+:root[data-theme='dark'] .lock-gate__error {
+  color: #ff6961;
+}
+
+.newsletter__sent {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.tipjar__amounts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tipjar__amounts .tile-pill {
+  align-self: auto;
+  text-decoration: none;
+  max-width: none;
+}
+
+.tipjar__via {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.form-card--bar.tipjar .tipjar__via {
+  display: none;
+}
+
+/* -------------------------------- Product ------------------------------- */
+
+.product {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.product__image {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  object-fit: cover;
+  background: var(--card-muted);
+}
+
+.product__badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 2;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.product__body {
+  padding: 12px 16px 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.product:not(.product--with-image) .product__body {
+  margin-top: auto;
+  padding: 20px;
+}
+
+.product__text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.product__text small {
+  color: var(--muted);
+  font-size: 13px;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product__buy {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.product__price {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.product__button {
+  max-width: none;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}
+
+.product--bar {
+  flex-direction: row;
+  align-items: center;
+}
+
+.product--bar .product__body {
+  flex: 1;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  padding: 0 16px;
+  margin: 0 !important;
+}
+
+.product--bar .product__badge {
+  position: static;
+  margin-left: 12px;
+}
+
+/* --------------------------------- Locks -------------------------------- */
+
+.tile-lockable {
+  height: 100%;
+  filter: blur(14px) saturate(0.7);
+  opacity: 0.6;
+  pointer-events: none;
+  user-select: none;
+}
+
+.lock-gate {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 14px;
+  text-align: center;
+  color: var(--text);
+  background: color-mix(in srgb, var(--card) 55%, transparent);
+}
+
+.lock-gate p,
+.lock-gate label {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+  max-width: 260px;
+}
+
+.lock-gate label span {
+  color: var(--muted);
+}
+
+.lock-gate__row {
+  display: flex;
+  gap: 6px;
+  width: min(260px, 100%);
+}
+
+.lock-gate__button {
+  padding: 7px 14px;
+  font-size: 13px;
+}
+
+.tile-cell.shape-bar .lock-gate {
+  grid-auto-flow: column;
+  align-items: center;
+  place-content: center;
+  padding: 6px 12px;
+}
+
+.tile-cell.shape-bar .lock-gate > svg,
+.tile-cell.shape-bar .lock-gate label span {
+  display: none;
+}
+
+.tile-cell.shape-bar .lock-gate label b {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 30vw;
+}
+
+/* --------------------------- Spotlight animations ------------------------ */
+/* One card can be made to stand out (Card settings → Look). */
+
+@media (prefers-reduced-motion: no-preference) {
+  .tile-grid:not(.tile-grid--editing) .spotlight--pulse {
+    animation: spot-pulse 2.4s ease-in-out infinite;
+  }
+
+  .tile-grid:not(.tile-grid--editing) .spotlight--wiggle {
+    animation: spot-wiggle 4s ease-in-out infinite;
+  }
+
+  .tile-grid:not(.tile-grid--editing) .spotlight--bounce {
+    animation: spot-bounce 3s ease-in-out infinite;
+  }
+
+  .tile-grid:not(.tile-grid--editing) .spotlight--glow {
+    animation: spot-glow 2.6s ease-in-out infinite;
+  }
+
+  .spotlight--shine::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.45) 50%, transparent 65%);
+    background-size: 250% 100%;
+    animation: spot-shine 3.2s ease-in-out infinite;
+  }
+}
+
+/* Reduced motion: a still accent ring instead. */
+@media (prefers-reduced-motion: reduce) {
+  .spotlight {
+    box-shadow: 0 0 0 2px var(--accent), var(--shadow);
+  }
+}
+
+@keyframes spot-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+
+@keyframes spot-wiggle {
+  0%,
+  80%,
+  100% {
+    transform: rotate(0);
+  }
+  84% {
+    transform: rotate(-1.6deg);
+  }
+  88% {
+    transform: rotate(1.6deg);
+  }
+  92% {
+    transform: rotate(-1deg);
+  }
+  96% {
+    transform: rotate(0.6deg);
+  }
+}
+
+@keyframes spot-bounce {
+  0%,
+  70%,
+  100% {
+    transform: translateY(0);
+  }
+  78% {
+    transform: translateY(-6px);
+  }
+  86% {
+    transform: translateY(0);
+  }
+  92% {
+    transform: translateY(-2px);
+  }
+}
+
+@keyframes spot-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent), var(--shadow);
+  }
+  50% {
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 45%, transparent), 0 0 24px color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+}
+
+@keyframes spot-shine {
+  0% {
+    background-position: 130% 0;
+  }
+  60%,
+  100% {
+    background-position: -30% 0;
+  }
+}
+
+/* --------------------------- Link button styles -------------------------- */
+/* Design → Buttons: applies to 1-row cards, the classic link-in-bio list. */
+
+:root[data-button-shape='pill'] .tile-cell.shape-bar:not(.type-heading) {
+  border-radius: 999px;
+}
+
+:root[data-button-shape='pill'] .tile-cell.shape-bar:not(.type-heading) .tile-card__link::after {
+  border-radius: 999px;
+}
+
+:root[data-button-shape='square'] .tile-cell.shape-bar:not(.type-heading),
+:root[data-button-shape='square'] .tile-cell.shape-bar:not(.type-heading) .tile-card__link::after {
+  border-radius: 4px;
+}
+
+:root[data-button-fill='solid'] .tile-cell.shape-bar:not(.type-heading):not(.has-own-colors) {
+  --card: var(--accent);
+  --text: var(--on-accent, #fff);
+  /* Same as the title: any accent mix falls below 4.5:1 on some accents. */
+  --muted: var(--on-accent, #fff);
+  --card-muted: color-mix(in srgb, var(--on-accent, #fff) 16%, var(--accent));
+  --border: color-mix(in srgb, var(--on-accent, #fff) 25%, transparent);
+  background: var(--accent);
+  border-color: transparent;
+}
+
+/* Links in a text card on a solid button: the accent would vanish. */
+:root[data-button-fill='solid'] .tile-cell.shape-bar:not(.type-heading):not(.has-own-colors) .rich-text a {
+  color: inherit;
+}
+
+:root[data-button-fill='outline'] .tile-cell.shape-bar:not(.type-heading):not(.has-own-colors) {
+  background: transparent;
+  border: 2px solid var(--text);
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+:root[data-button-fill='soft'] .tile-cell.shape-bar:not(.type-heading):not(.has-own-colors) {
+  --card: color-mix(in srgb, var(--accent) 14%, var(--bg, #fff));
+  /* Grey subtitles fall below 4.5:1 on the tint: a darker shade of the text. */
+  --muted: color-mix(in srgb, var(--text) 78%, var(--card));
+  background: var(--card);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Per-card colours win over the card style. */
+.tile-cell.has-own-colors {
+  background: var(--card);
+}
+
+/* ------------------------------ Social icons ----------------------------- */
+
+.social-icons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 10px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.social-icons--bottom {
+  justify-content: center;
+  margin: 28px 0 8px;
+}
+
+.social-icons a {
+  display: block;
+  border-radius: 12px;
+  transition: transform 0.2s ease;
+}
+
+.social-icons a:hover {
+  transform: translateY(-2px);
+}
+
+.social-icons a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.social-icons__badge {
+  border-radius: 12px;
+}
+
+/* ----------------------------- Visitor dialogs --------------------------- */
+
+.visitor-dialog {
+  width: min(440px, calc(100vw - 24px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.25);
+}
+
+.visitor-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.45);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+.visitor-dialog__inner {
+  padding: 18px 20px 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.visitor-dialog__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.visitor-dialog__header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.visitor-dialog__close {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--card-muted);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.visitor-dialog__lead {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.visitor-form {
+  display: grid;
+  gap: 10px;
+}
+
+.visitor-form label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.visitor-form textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+.visitor-form [aria-invalid='true'] {
+  border-color: #d70015;
+}
+
+.visitor-form__note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.visitor-form__sent {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 16px 0 4px;
+  text-align: center;
+}
+
+.visitor-form__sent p {
+  margin: 0;
+}
+
+/* ------------------------------ Share button ----------------------------- */
+
+.share-fab {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow-hover);
+  cursor: pointer;
+}
+
+.share-dialog__qr {
+  width: min(220px, 70vw);
+  margin: 0 auto;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.share-dialog__qr svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.share-dialog__url {
+  margin: 0;
+  text-align: center;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.share-dialog__actions {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.share-dialog__downloads {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.share-dialog__link {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.countdown__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.countdown__foot .tile-pill {
+  align-self: center;
+}
+
+.tile-cell.has-own-colors {
+  color: var(--text);
+  /* Own colours: links mix the accent with the card's own text colour. */
+  --link: color-mix(in srgb, var(--accent) 60%, var(--text));
+}
+
+/* The map's address label waits until the map itself is loaded. */
+.map-tile:has(.embed-consent) .map-tile__label {
+  display: none;
+}
+
+
+/* ------------------- Small cards: keep everything inside ----------------- */
+/* Form, tip-jar, contact and countdown cards are size containers, so they
+   can drop decoration when a phone makes them small. */
+
+.form-card {
+  container-type: size;
+}
+
+.form-card__button,
+.tipjar__amounts .tile-pill {
+  max-width: 100%;
+}
+
+/* Long button labels wrap instead of being cut off on small cards. */
+.form-card__button {
+  white-space: normal;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.product__buy {
+  flex-wrap: wrap;
+}
+
+/* The cell itself is a (named) size container, for rules that change the
+   card's own padding. Rows have fixed heights, so this is safe. */
+.tile-grid > .tile-cell {
+  container: cell / size;
+}
+
+@container cell (max-height: 190px) {
+  .form-card:not(.form-card--bar),
+  .countdown:not(.countdown--bar) {
+    padding: 14px 16px;
+    gap: 6px;
+  }
+}
+
+@container cell (max-height: 190px) {
+  .tipjar__via,
+  .countdown__when {
+    display: none;
+  }
+
+  .tipjar__amounts .tile-pill {
+    padding: 5px 10px;
+  }
+}
+
+/* Phones (cards about 140 px tall): drop the icon and the subtitle. */
+@container cell (max-height: 150px) {
+  .form-card:not(.form-card--bar) > .ui-badge--lg,
+  .form-card:not(.form-card--bar) .form-card__text small,
+  .countdown:not(.countdown--bar) .countdown__head .ui-badge {
+    display: none;
+  }
+
+  .countdown__clock span {
+    padding: 4px 2px;
+  }
+}
+
+/* Small countdowns: a tighter 2 × 2 clock, so the button still fits. */
+@container cell (max-height: 190px) {
+  .countdown--sm .countdown__head .ui-badge {
+    display: none;
+  }
+
+  .countdown--sm .countdown__clock span {
+    padding: 3px 2px;
+  }
+
+  .countdown--sm .countdown__clock b {
+    font-size: 17px;
+  }
+
+  .countdown--sm .countdown__clock small {
+    font-size: 10px;
+  }
+}
+
+/* Very small (phones): days and hours only; the screen-reader label keeps
+   the full time. */
+@container cell (max-height: 150px) {
+  .countdown--sm .countdown__clock span:nth-child(n + 3) {
+    display: none;
+  }
+
+  /* Email card: drop the logo so the copy button fits. */
+  .tile-card:has(> .tile-card__footer) .tile-card__head > :is(.brand-badge, .ui-badge, .tile-thumb) {
+    display: none;
+  }
+}
+
+/* Very narrow players (one column on a small phone): a slimmer button. */
+@container (max-width: 160px) {
+  .embed-consent {
+    padding: 8px;
+  }
+
+  .embed-consent__button {
+    padding: 7px 10px;
+    font-size: 0.75rem;
+  }
+}
+
+/* One-row tip jars: the amounts stay on one row; extra ones are cut. */
+.form-card--bar .tipjar__amounts {
+  flex-wrap: nowrap;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.form-card--bar .tipjar__amounts .tile-pill {
+  flex-shrink: 0;
+}
+
+/* Narrow one-column cards (small phones): the clock wraps to 2 × 2. */
+@container cell (max-width: 160px) {
+  .countdown:not(.countdown--bar) .countdown__clock {
+    flex-wrap: wrap;
+  }
+
+  .countdown:not(.countdown--bar) .countdown__clock span {
+    flex-basis: calc(50% - 3px);
+  }
+}
+
+/* Narrow button bars (phones): drop the title or the extra button. */
+@container (max-width: 480px) {
+  .form-card--bar.newsletter > .ui-badge--lg,
+  .form-card--bar.newsletter .form-card__text {
+    display: none;
+  }
+
+  .form-card--bar.newsletter .newsletter__form {
+    flex: 1;
+  }
+
+  .countdown--bar .countdown__foot {
+    display: none;
+  }
+}
+
+@container (max-width: 340px) {
+  .form-card--bar.tipjar .form-card__text {
+    display: none;
+  }
+}
+
+/* Lock prompts are size containers too. */
+.lock-gate {
+  container-type: size;
+}
+
+.lock-gate__row input {
+  min-width: 0;
+}
+
+@container (max-width: 260px) {
+  .lock-gate__row {
+    flex-direction: column;
+  }
+
+  .lock-gate p,
+  .lock-gate label {
+    font-size: 12px;
+  }
+}
+
+@container (max-height: 190px) {
+  .lock-gate:not(.lock-gate--bar) > svg {
+    display: none;
+  }
+}
+
+.lock-gate {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.newsletter__form {
+  min-width: 0;
+}
+
+.tile-cell.shape-bar .lock-gate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.tile-cell.shape-bar .lock-gate label {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.tile-cell.shape-bar .lock-gate__row {
+  flex: 1;
+  width: auto;
+  max-width: 320px;
+  min-width: 0;
+}
+
+@container (max-width: 420px) {
+  .tile-cell.shape-bar .lock-gate label {
+    display: none;
+  }
+}
+
+/* Narrow cards: the button and the choice, without the explanation. */
+@container (max-width: 190px) {
+  .embed-consent p span {
+    display: none;
+  }
+}
+
+/* Click-to-load: the "always load" choice stays centred when it wraps. */
+.embed-consent__remember {
+  justify-content: center;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.countdown__button {
+  max-width: none;
+}
+
+/* Text inside a card follows the card's own colours (per-card colours,
+   solid buttons). */
+.tile-cell {
+  color: var(--text);
+  /* Long unbroken words (URLs, compound names) wrap inside the card instead
+     of being cut off; single-line labels keep their ellipsis. */
+  overflow-wrap: anywhere;
+}
+
+/* Solid buttons: form fields and badges stay visible on the accent colour. */
+:root[data-button-fill='solid'] .tile-cell.shape-bar:not(.has-own-colors) .newsletter__form input {
+  background: #fff;
+  color: #111;
+  border-color: transparent;
+}
+
+:root[data-button-fill='solid'] .tile-cell.shape-bar:not(.has-own-colors) :is(.newsletter__form button, .product__badge, .product__button, .lock-gate__button, .tile-pill--button) {
+  background: var(--on-accent, #fff);
+  color: var(--accent);
+}
+
+/* ------------------------------- Icon colours ----------------------------- */
+/*
+ * Design → Icons (appearance.iconStyle, <html data-icons="…">): how the
+ * platform logos on the page (cards and the social icons row) are coloured.
+ * Only the page itself (.layout, the 404 page), never the editor's menus.
+ * "brand" (default) keeps each network's own colours.
+ */
+:root[data-icons='tinted'] :is(.layout, .not-found) .brand-badge,
+.icon-demo--tinted .brand-badge {
+  background: color-mix(in srgb, var(--badge-bg) 14%, var(--card));
+  /* A little of the text colour keeps light brands (yellow…) readable. */
+  color: color-mix(in srgb, var(--badge-bg) 72%, var(--text));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--badge-bg) 22%, transparent);
+}
+
+/* Black logos (X, Threads, TikTok…) would vanish when tinted on dark pages. */
+:root[data-theme='dark'] .icon-demo--tinted .brand-badge:is(.brand-x, .brand-github),
+:root[data-theme='dark'][data-icons='tinted'] :is(.layout, .not-found) .brand-badge:is(.brand-x, .brand-threads, .brand-tiktok, .brand-github, .brand-medium, .brand-website, .brand-email) {
+  background: var(--card-muted);
+  color: var(--text);
+}
+
+:root[data-icons='accent'] :is(.layout, .not-found) .brand-badge,
+.icon-demo--accent .brand-badge {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  box-shadow: none;
+}
+
+:root[data-icons='mono'] :is(.layout, .not-found) .brand-badge,
+.icon-demo--mono .brand-badge {
+  background: var(--text);
+  /* The card colour, not the page's: inside a solid (inverted) link button
+     the logo then takes the button's colour instead of vanishing. */
+  color: var(--card);
+  box-shadow: none;
+}
+
+:root[data-icons='soft'] :is(.layout, .not-found) .brand-badge,
+.icon-demo--soft .brand-badge {
+  background: color-mix(in srgb, var(--text) 7%, var(--card));
+  color: var(--text);
+  box-shadow: none;
+}
+
+:root[data-icons='outline'] :is(.layout, .not-found) .brand-badge,
+.icon-demo--outline .brand-badge {
+  background: transparent;
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--text) 30%, transparent);
+}
+
+/* The "Follow"/"Subscribe" pills follow the icon colour too. */
+:root[data-icons='accent'] .layout .tile-card .tile-pill {
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+}
+
+:root:is([data-icons='mono'], [data-icons='outline']) .layout .tile-card .tile-pill {
+  background: var(--text);
+  color: var(--bg);
+}
+
+:root:is([data-icons='soft'], [data-icons='tinted']) .layout .tile-card .tile-pill {
+  background: color-mix(in srgb, var(--text) 9%, var(--card));
+  color: var(--text);
+}

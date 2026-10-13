@@ -1,0 +1,31 @@
+# Example: several sites from one image, each with its own data volume.
+#   docker compose -f deploy/docker-compose.yml up -d --build
+#   docker compose -f deploy/docker-compose.yml exec alice node server/scripts/set-password.js
+#   docker compose -f deploy/docker-compose.yml exec alice node server/scripts/admin-url.js
+# Put nginx (with Let's Encrypt) in front: one server block per domain,
+# proxying to 127.0.0.1:<port>. See docs/multiple-sites.md.
+
+x-site: &site
+  build: ..
+  restart: unless-stopped
+  environment:
+    NODE_ENV: production
+    TRUST_PROXY: "1"
+    HOST: 0.0.0.0
+    PORT: "3001"
+    DATA_DIR: /data
+
+services:
+  alice:
+    <<: *site
+    ports: ["127.0.0.1:3101:3001"]
+    volumes: ["alice-data:/data"]
+
+  bob:
+    <<: *site
+    ports: ["127.0.0.1:3102:3001"]
+    volumes: ["bob-data:/data"]
+
+volumes:
+  alice-data:
+  bob-data:

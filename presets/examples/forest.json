@@ -1,0 +1,15 @@
+{
+  "trellisPreset": 1,
+  "name": "Forest",
+  "theme": "dark",
+  "accent": "#4ade80",
+  "appearance": {
+    "colors": { "bg": "#0c1410", "card": "#14201a", "text": "#e7f3ea", "muted": "#8fa898" },
+    "background": { "type": "gradient", "color1": "#0c1410", "color2": "#173326", "angle": 170, "effect": "fireflies", "speed": "slow" },
+    "cardStyle": "glass",
+    "glassClarity": 60,
+    "radius": 20,
+    "font": "outfit",
+    "animation": "subtle"
+  }
+}

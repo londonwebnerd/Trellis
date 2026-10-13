@@ -1,0 +1,1115 @@
+/*
+ * Base styles: design tokens, page layout, profile column and the tile grid.
+ * Tile internals live in tiles.css; editor-only UI in editor.css (lazy-loaded).
+ */
+
+/* ----------------------------- Design tokens ----------------------------- */
+
+/*
+ * The light/dark palettes below are defaults. The Design panel can override
+ * --bg, --card, --text, --muted, --accent, --radius and --font with inline
+ * styles on <html> (see hooks/useTheme.js). Borders and muted surfaces are
+ * derived from the text/card colours, so custom palettes stay coherent.
+ */
+:root {
+  --accent: #0a84ff;
+  --bg: #fafafa;
+  --card: #ffffff;
+  --text: #111113;
+  --muted: #6c6c71;
+  --card-muted: color-mix(in srgb, var(--text) 5%, var(--card));
+  --border: color-mix(in srgb, var(--text) 9%, transparent);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.06);
+  --radius: 24px;
+  --radius-sm: max(4px, calc(var(--radius) * 0.58));
+  --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Links in text cards: the accent shaded to read on the card (cssVars). */
+  --link: var(--link-light);
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --bg: #0b0b0c;
+  --card: #18181b;
+  --text: #f5f5f7;
+  --muted: #9a9aa0;
+  --card-muted: color-mix(in srgb, var(--text) 7%, var(--card));
+  --border: color-mix(in srgb, var(--text) 10%, transparent);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-hover: 0 8px 28px rgba(0, 0, 0, 0.5);
+  --link: var(--link-dark);
+  color-scheme: dark;
+}
+
+/* --------------------------------- Reset -------------------------------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+  transition: background 0.3s ease, color 0.3s ease;
+  color: var(--text);
+  font-family: var(--font);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.app-message {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+}
+
+/* -------------------------------- Layout -------------------------------- */
+
+/* Mobile/tablet: profile on top, grid below. The column stays about as wide
+   as the desktop grid, so cards on a tablet are the same size as on a laptop
+   (not stretched across a 1000 px landscape screen). */
+.layout {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 40px 16px 64px;
+  display: grid;
+  gap: 40px;
+}
+
+/* Desktop: sticky profile column on the left, grid on the right. */
+@media (min-width: 1100px) {
+  .layout {
+    max-width: 1280px;
+    grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+    gap: 64px;
+    padding: 72px 48px;
+    align-items: start;
+  }
+  .layout > .profile {
+    position: sticky;
+    top: 72px;
+  }
+}
+
+/* -------------------------------- Profile ------------------------------- */
+
+.profile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+  /* A long place name or a pasted URL wraps instead of running off. */
+  overflow-wrap: anywhere;
+}
+
+.profile__avatar {
+  width: 148px;
+  height: 148px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--card-muted);
+  display: grid;
+  place-items: center;
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+  flex-shrink: 0;
+}
+
+.profile__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile__name {
+  overflow-wrap: anywhere;
+  font-size: clamp(30px, 5vw, 42px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.profile__bio {
+  overflow-wrap: anywhere;
+  font-size: 18px;
+  color: var(--muted);
+  margin: 0;
+  white-space: pre-wrap;
+  max-width: 60ch;
+}
+
+.profile__location {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  min-width: 0;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 15px;
+  margin: 0;
+}
+
+/*
+ * Text straight on a busy background (an animated effect such as the retro
+ * grid's glowing horizon, or a photo): a soft halo in the background colour
+ * behind each letter, and the grey text a little closer to the main text
+ * colour, so it stays readable wherever a bright line or blob passes behind.
+ * Cards have their own background and don't need it.
+ */
+:root[data-backdrop='busy'] :is(.profile__name, .profile__bio, .profile__location, .profile .link-button, .tile-heading, .site-footer a, .not-found h1, .not-found p) {
+  text-shadow:
+    0 0 1px var(--bg),
+    0 0 4px var(--bg),
+    0 0 10px var(--bg),
+    0 0 18px var(--bg);
+}
+
+:root[data-backdrop='busy'] :is(.profile__bio, .profile__location, .profile .link-button, .site-footer a) {
+  color: color-mix(in srgb, var(--muted) 55%, var(--text));
+}
+
+:root[data-backdrop='busy'] .profile__location svg {
+  filter: drop-shadow(0 0 3px var(--bg)) drop-shadow(0 0 8px var(--bg));
+}
+
+/* --------------------------------- Grid --------------------------------- */
+
+/*
+ * Square cells: the container's width decides the cell size via container
+ * query units (cqw). Rows are half a cell tall, so a tile's height `h`
+ * counts half-cells: h=1 is a slim button bar, h=2 a square, h=4 tall.
+ * Width `w` counts columns (1–4). Phones get 2 columns, so w=3/4 become 2.
+ */
+.tile-grid-container {
+  container-type: inline-size;
+  min-width: 0;
+}
+
+.tile-grid {
+  --cols: 4;
+  --gap: 20px;
+  --cell: calc((100cqw - (var(--cols) - 1) * var(--gap)) / var(--cols));
+  --row: calc((var(--cell) - var(--gap)) / 2);
+  display: grid;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-auto-rows: var(--row);
+  grid-auto-flow: row dense;
+  gap: var(--gap);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.w-1 { grid-column: span 1; }
+.w-2 { grid-column: span 2; }
+.w-3 { grid-column: span 3; }
+.w-4 { grid-column: 1 / -1; }
+
+.h-1 { grid-row: span 1; }
+.h-2 { grid-row: span 2; }
+.h-3 { grid-row: span 3; }
+.h-4 { grid-row: span 4; }
+.h-5 { grid-row: span 5; }
+.h-6 { grid-row: span 6; }
+.h-7 { grid-row: span 7; }
+.h-8 { grid-row: span 8; }
+
+@container (max-width: 560px) {
+  .tile-grid {
+    --cols: 2;
+    --gap: 14px;
+  }
+  .w-3 { grid-column: 1 / -1; }
+}
+
+.tile-cell {
+  position: relative;
+  min-width: 0;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s ease, background 0.3s ease;
+}
+
+/* ------------------------------ Card styles ----------------------------- */
+/* Chosen in the Design panel; set as data-cards on <html>. */
+
+/* Glass: translucent cards over a gradient or photo background. */
+/*
+ * --clarity (0 = frosted, 1 = crystal clear; Design panel > Cards > Clarity)
+ * scales the card opacity and blur of Glass and Crystal. 0.5 is the default.
+ */
+:root[data-cards='glass'] .tile-cell:not(.type-heading) {
+  --c: var(--clarity, 0.5);
+  background: color-mix(in srgb, var(--card) clamp(8%, calc(104% - var(--c) * 84%), 100%), transparent);
+  border-color: color-mix(in srgb, var(--card) clamp(20%, calc(80% - var(--c) * 50%), 100%), transparent);
+  -webkit-backdrop-filter: blur(calc(32px - var(--c) * 28px)) saturate(1.4);
+  backdrop-filter: blur(calc(32px - var(--c) * 28px)) saturate(1.4);
+}
+
+/*
+ * Crystal: our take on refractive "liquid" glass. Very clear, highly
+ * saturated backdrop blur, a bright bevelled rim (a masked gradient border)
+ * and a soft specular highlight that follows the pointer (--mx/--my are set
+ * by TileGrid.jsx). Looks best over a gradient, photo or animated background.
+ */
+:root[data-cards='crystal'] .tile-cell:not(.type-heading) {
+  --c: var(--clarity, 0.5);
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--card) clamp(4%, calc(84% - var(--c) * 76%), 100%), transparent),
+    color-mix(in srgb, var(--card) clamp(0%, calc(32% - var(--c) * 32%), 100%), transparent)
+  );
+  border: 1px solid color-mix(in srgb, #fff 30%, transparent);
+  -webkit-backdrop-filter: blur(calc(24px - var(--c) * 20px)) saturate(1.9) brightness(1.05);
+  backdrop-filter: blur(calc(24px - var(--c) * 20px)) saturate(1.9) brightness(1.05);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.12),
+    inset 0 0 18px rgba(255, 255, 255, 0.08),
+    0 12px 32px -10px rgba(0, 0, 0, 0.22);
+}
+
+/* Bevelled rim: brighter at the top-left and bottom-right corners. */
+/* A card with its own colours stays solid in Glass/Crystal: see-through, the
+   colours someone picked on purpose would be washed out (and hard to read). */
+:root:is([data-cards='glass'], [data-cards='crystal']) .tile-cell.has-own-colors:not(.type-heading) {
+  background: var(--card);
+}
+
+:root[data-cards='crystal'] .tile-cell:not(.type-heading)::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  padding: 1.25px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.05) 38%, rgba(255, 255, 255, 0) 62%, rgba(255, 255, 255, 0.45));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Specular highlight that follows the pointer. */
+:root[data-cards='crystal'] .tile-cell:not(.type-heading)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--mx, 25%) var(--my, 0%), rgba(255, 255, 255, 0.32), transparent 65%);
+  opacity: 0.55;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+:root[data-cards='crystal'] .tile-cell:not(.type-heading):hover::after {
+  opacity: 1;
+}
+
+:root[data-theme='dark'][data-cards='crystal'] .tile-cell:not(.type-heading) {
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.05),
+    inset 0 0 18px rgba(255, 255, 255, 0.04),
+    0 12px 32px -10px rgba(0, 0, 0, 0.6);
+}
+
+:root[data-theme='dark'][data-cards='crystal'] .tile-cell:not(.type-heading)::before {
+  opacity: 0.45;
+}
+
+:root[data-theme='dark'][data-cards='crystal'] .tile-cell:not(.type-heading)::after {
+  background: radial-gradient(260px circle at var(--mx, 25%) var(--my, 0%), rgba(255, 255, 255, 0.12), transparent 65%);
+}
+
+/* Inner surfaces become frosted too. */
+:root[data-cards='crystal'] .link-list__item,
+:root[data-cards='crystal'] .feed-post,
+:root[data-cards='crystal'] .gh-repo,
+:root[data-cards='crystal'] .tile-pill--button {
+  background: color-mix(in srgb, var(--card) 38%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+/* The profile panel over photos matches the crystal look, but stays solid
+   enough for the bio's grey text on a bright photo. */
+:root[data-cards='crystal'] .page-bg--image ~ .layout > .profile {
+  background: linear-gradient(150deg, color-mix(in srgb, var(--card) 74%, transparent), color-mix(in srgb, var(--card) 58%, transparent));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* Outline: crisp border, no shadow. */
+:root[data-cards='outline'] .tile-cell:not(.type-heading) {
+  border: 1.5px solid color-mix(in srgb, var(--text) 82%, transparent);
+  box-shadow: none;
+}
+
+/* Hairline: paper-white cards with a whisper-thin border (Notebook presets). */
+:root[data-cards='hairline'] .tile-cell:not(.type-heading) {
+  border: 1px solid color-mix(in srgb, var(--text) 11%, transparent);
+  box-shadow: none;
+}
+
+:root[data-cards='hairline']:not([data-anim='none']) .tile-grid:not(.tile-grid--editing) .tile-cell:not(.type-heading):hover {
+  transform: none;
+  background: color-mix(in srgb, var(--text) 3%, var(--card));
+  box-shadow: none;
+}
+
+/* Flat: soft tinted blocks, no border or shadow. */
+:root[data-cards='flat'] .tile-cell:not(.type-heading) {
+  background: color-mix(in srgb, var(--text) 5%, var(--card));
+  border-color: transparent;
+  box-shadow: none;
+}
+
+:root[data-cards='flat'] .link-list__item,
+:root[data-cards='flat'] .feed-post {
+  background: var(--card);
+}
+
+/* ------------------------------ Background ------------------------------ */
+
+/* Fixed layer behind everything (components/PageBackground.jsx). */
+.page-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.page-bg__fill {
+  position: absolute;
+  inset: -40px; /* room for blur without soft edges */
+  background-size: cover;
+  background-position: center;
+}
+
+.page-bg__dim {
+  position: absolute;
+  inset: 0;
+  background: #000;
+}
+
+.page-bg__pattern {
+  position: absolute;
+  inset: 0;
+  opacity: 0.6;
+}
+
+.page-bg__pattern--dots {
+  background-image: radial-gradient(color-mix(in srgb, var(--text) 18%, transparent) 1px, transparent 1.6px);
+  background-size: 22px 22px;
+}
+
+.page-bg__pattern--grid {
+  background-image: linear-gradient(color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--text) 7%, transparent) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* On a photo, the profile sits on a frosted panel so the text stays readable. */
+.page-bg--image ~ .layout > .profile {
+  padding: 24px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--card) 72%, transparent);
+  border: 1px solid color-mix(in srgb, var(--card) 55%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  backdrop-filter: blur(18px) saturate(1.3);
+}
+
+/* ------------------------- Background effects --------------------------- */
+/*
+ * Animated effects (components/PageBackground.jsx). Colours come from the
+ * accent (--accent) and the two background colours (--fx-a, --fx-b);
+ * --fx-speed scales every duration (slow 1.7, normal 1, fast 0.55).
+ * Only transform/opacity are animated, so it stays smooth on phones.
+ */
+.fx {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Aurora: three huge soft colour blobs drifting slowly. */
+.fx-aurora span {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  opacity: 0.45;
+  will-change: transform;
+  animation: fx-aurora calc(26s * var(--fx-speed)) ease-in-out infinite alternate;
+}
+
+.fx-aurora span:nth-child(1) {
+  top: -30vmax;
+  left: -20vmax;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 62%);
+}
+
+.fx-aurora span:nth-child(2) {
+  top: -10vmax;
+  right: -30vmax;
+  background: radial-gradient(circle, var(--fx-a) 0%, transparent 62%);
+  animation-duration: calc(32s * var(--fx-speed));
+  animation-delay: -8s;
+}
+
+.fx-aurora span:nth-child(3) {
+  bottom: -40vmax;
+  left: 10vmax;
+  background: radial-gradient(circle, var(--fx-b) 0%, transparent 62%);
+  animation-duration: calc(38s * var(--fx-speed));
+  animation-delay: -16s;
+}
+
+@keyframes fx-aurora {
+  0% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(12vw, 8vh) scale(1.15); }
+  100% { transform: translate(-8vw, 14vh) scale(0.95); }
+}
+
+:root[data-theme='dark'] .fx-aurora span {
+  opacity: 0.32;
+}
+
+/* Flow: a large three-colour gradient sliding slowly. */
+.fx-flow {
+  inset: -50%;
+  background: radial-gradient(circle at 30% 30%, var(--fx-a), transparent 45%), radial-gradient(circle at 70% 60%, var(--fx-b), transparent 45%),
+    radial-gradient(circle at 40% 80%, color-mix(in srgb, var(--accent) 60%, transparent), transparent 40%);
+  opacity: 0.55;
+  will-change: transform;
+  animation: fx-flow calc(40s * var(--fx-speed)) linear infinite;
+}
+
+@keyframes fx-flow {
+  from { transform: rotate(0deg) scale(1.2); }
+  to { transform: rotate(360deg) scale(1.2); }
+}
+
+/* Orbs: soft bubbles rising from the bottom. */
+.fx-orbs span {
+  position: absolute;
+  bottom: -160px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--accent) 70%, white), var(--accent) 45%, transparent 72%);
+  will-change: transform;
+  animation: fx-rise linear infinite;
+}
+
+@keyframes fx-rise {
+  from { transform: translate(0, 0); }
+  50% { transform: translate(4vw, -60vh); }
+  to { transform: translate(-3vw, calc(-100vh - 200px)); }
+}
+
+/* Waves: three layered waves rolling along the bottom of the screen. */
+.fx-waves {
+  top: auto;
+  height: 38vh;
+}
+
+.fx-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 200%;
+  height: 100%;
+  fill: var(--accent);
+  will-change: transform;
+  animation: fx-wave calc(22s * var(--fx-speed)) linear infinite;
+}
+
+.fx-wave--0 { opacity: 0.07; height: 100%; }
+.fx-wave--1 { opacity: 0.09; height: 75%; animation-duration: calc(16s * var(--fx-speed)); animation-direction: reverse; }
+.fx-wave--2 { opacity: 0.12; height: 50%; animation-duration: calc(11s * var(--fx-speed)); }
+
+@keyframes fx-wave {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* Stars: twinkling dots plus an occasional shooting star. */
+.fx-stars span {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--text);
+  opacity: 0.15;
+  animation: fx-twinkle ease-in-out infinite;
+}
+
+@keyframes fx-twinkle {
+  0%, 100% { opacity: 0.18; transform: scale(0.8); }
+  50% { opacity: 0.9; transform: scale(1.2); }
+}
+
+.fx-shooting {
+  position: absolute;
+  top: 12%;
+  left: 60%;
+  width: 140px;
+  height: 1.5px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--text), transparent);
+  opacity: 0;
+  transform: rotate(-25deg);
+  animation: fx-shoot calc(9s * var(--fx-speed)) ease-in infinite 3s;
+}
+
+@keyframes fx-shoot {
+  0%, 88% { opacity: 0; transform: rotate(-25deg) translateX(0); }
+  90% { opacity: 0.8; }
+  100% { opacity: 0; transform: rotate(-25deg) translateX(-420px); }
+}
+
+/* Fireflies: small glowing dots wandering and blinking. */
+.fx-fireflies span {
+  position: absolute;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 70%, #fff6a8);
+  box-shadow: 0 0 12px 5px color-mix(in srgb, var(--accent) 60%, #fff6a8);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation:
+    fx-wander var(--t) ease-in-out infinite alternate,
+    fx-glow calc(var(--t) / 3) ease-in-out infinite;
+}
+
+@keyframes fx-wander {
+  0% { transform: translate(0, 0); }
+  33% { transform: translate(var(--dx), calc(var(--dy) * -0.6)); }
+  66% { transform: translate(calc(var(--dx) * -0.4), var(--dy)); }
+  100% { transform: translate(calc(var(--dx) * 0.7), calc(var(--dy) * 0.3)); }
+}
+
+@keyframes fx-glow {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 1; }
+}
+
+/* Snow: soft flakes drifting down with a gentle sway. */
+.fx-snow span {
+  position: absolute;
+  top: -12px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text) 30%, transparent);
+  will-change: transform;
+  animation: fx-fall linear infinite;
+}
+
+:root[data-theme='dark'] .fx-snow span {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes fx-fall {
+  from { transform: translate(0, 0); }
+  25% { transform: translate(var(--sway), 25vh); }
+  50% { transform: translate(0, 50vh); }
+  75% { transform: translate(calc(var(--sway) * -1), 75vh); }
+  to { transform: translate(0, calc(100vh + 24px)); }
+}
+
+/* Ripples: rings spreading out like raindrops on a pond. */
+.fx-ripples span {
+  position: absolute;
+  width: 60vmax;
+  height: 60vmax;
+  margin: -30vmax 0 0 -30vmax;
+  border-radius: 50%;
+  border: 3px solid color-mix(in srgb, var(--accent) 75%, transparent);
+  box-shadow:
+    0 0 0 14px color-mix(in srgb, var(--accent) 10%, transparent),
+    inset 0 0 0 26px color-mix(in srgb, var(--accent) 7%, transparent);
+  opacity: 0;
+  transform: scale(0);
+  will-change: transform, opacity;
+  animation: fx-ripple calc(9s * var(--fx-speed)) cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+}
+
+@keyframes fx-ripple {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* Grid: a retro perspective floor gliding towards you. */
+/* Retro grid: a neon light-grid floor drawn on a canvas (TronGrid.jsx). */
+.fx-tron {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* With "reduce motion", keep a calm static version of each effect. */
+@media (prefers-reduced-motion: reduce) {
+  .fx-orbs,
+  .fx-shooting,
+  .fx-ripples {
+    display: none;
+  }
+
+  .fx-fireflies span {
+    opacity: 0.4;
+  }
+}
+
+/* ------------------------------ Animations ------------------------------ */
+/*
+ * data-anim on <html>: none | subtle | lively. Entrance animations only run
+ * on the public page (not while editing). Everything is disabled for
+ * visitors with "reduce motion" turned on (see the end of this file).
+ * Note: fill-mode "backwards" so finished animations don't block hover
+ * transforms.
+ */
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+
+@keyframes profile-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@keyframes bg-drift {
+  from {
+    background-position: 0% 30%;
+  }
+  to {
+    background-position: 100% 70%;
+  }
+}
+
+:root:not([data-anim='none']) .tile-grid:not(.tile-grid--editing) .tile-cell {
+  animation: tile-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 45ms + 80ms);
+}
+
+:root:not([data-anim='none']) .layout:not(.layout--editing) > .profile {
+  animation: profile-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+/* Hover: lift (subtle) or lift + tilt (lively), visitors only. */
+:root[data-anim='subtle'] .tile-grid:not(.tile-grid--editing) .tile-cell:not(.type-heading):hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-hover);
+}
+
+:root[data-anim='lively'] .tile-grid:not(.tile-grid--editing) .tile-cell:not(.type-heading):hover {
+  transform: translateY(-4px) rotate(-0.6deg) scale(1.01);
+  box-shadow: var(--shadow-hover);
+}
+
+:root[data-anim='lively'] .tile-cell:hover .brand-badge {
+  transform: rotate(-8deg) scale(1.08);
+}
+
+.brand-badge {
+  transition: transform 0.25s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+/* Outline cards get a hard offset shadow instead of a soft one. */
+:root[data-cards='outline']:not([data-anim='none']) .tile-grid:not(.tile-grid--editing) .tile-cell:not(.type-heading):hover {
+  transform: translate(-3px, -3px);
+  box-shadow: 4px 4px 0 color-mix(in srgb, var(--text) 85%, transparent);
+}
+
+:root[data-anim='lively'] .page-bg--gradient .page-bg__fill {
+  background-size: 220% 220%;
+  animation: bg-drift 18s ease-in-out infinite alternate;
+}
+
+/*
+ * Generated (DiceBear) avatar: a slow float plus a little "breathing"
+ * sway inside the circle, and a playful wiggle on hover. The image is
+ * slightly over-scaled so the sway never shows the circle's edge.
+ */
+@keyframes avatar-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes avatar-sway {
+  0%, 100% { transform: scale(1.08) rotate(-2deg); }
+  50% { transform: scale(1.1) rotate(2deg) translateY(2px); }
+}
+
+@keyframes avatar-wiggle {
+  0%, 100% { transform: scale(1.12) rotate(0); }
+  25% { transform: scale(1.14) rotate(-7deg); }
+  60% { transform: scale(1.14) rotate(6deg); }
+}
+
+.avatar-gen {
+  transform: scale(1.08);
+}
+
+:root:not([data-anim='none']):is([data-avatar='auto'], :not([data-avatar])) :is(.profile__avatar, .not-found__avatar):has(.avatar-gen) {
+  animation: avatar-float 5s ease-in-out infinite;
+}
+
+:root:not([data-anim='none']):is([data-avatar='auto'], :not([data-avatar])) .avatar-gen {
+  animation: avatar-sway 7s ease-in-out infinite;
+}
+
+:root:not([data-anim='none']):is([data-avatar='auto'], :not([data-avatar])) :is(.profile__avatar, .not-found__avatar):hover .avatar-gen {
+  animation: avatar-wiggle 0.7s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+/* ---------------------------- Avatar animations --------------------------- */
+/*
+ * Design → Avatar (appearance.avatarEffect, <html data-avatar="…">). Each
+ * effect applies to the profile photo, the 404 page's photo, and the little
+ * previews in the Design panel (.avatar-demo--<effect>). "Reduce motion"
+ * turns them all off (end of this file); the Ring then stays, standing still.
+ */
+@property --avatar-angle {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes avatar-fx-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-9px); }
+}
+
+@keyframes avatar-fx-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.045); }
+}
+
+@keyframes avatar-fx-glow {
+  0%, 100% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 16px 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+  50% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 70%, transparent), 0 0 38px 10px color-mix(in srgb, var(--accent) 50%, transparent); }
+}
+
+@keyframes avatar-fx-pulse {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent), 0 0 0 0 color-mix(in srgb, var(--accent) 35%, transparent); }
+  70% { box-shadow: 0 0 0 14px color-mix(in srgb, var(--accent) 0%, transparent), 0 0 0 28px color-mix(in srgb, var(--accent) 0%, transparent); }
+  100% { box-shadow: 0 0 0 0 transparent, 0 0 0 0 transparent; }
+}
+
+@keyframes avatar-fx-ring {
+  to { --avatar-angle: 360deg; }
+}
+
+@keyframes avatar-fx-wobble {
+  0%, 62%, 100% { transform: rotate(0); }
+  68% { transform: rotate(-7deg); }
+  76% { transform: rotate(6deg); }
+  84% { transform: rotate(-3deg); }
+  90% { transform: rotate(1deg); }
+}
+
+@keyframes avatar-fx-bounce {
+  0% { transform: scale(1); }
+  30% { transform: scale(1.12, 0.92); }
+  50% { transform: scale(0.94, 1.08); }
+  70% { transform: scale(1.04, 0.97); }
+  100% { transform: scale(1); }
+}
+
+@keyframes avatar-fx-glitch {
+  0%, 88%, 100% { transform: none; filter: none; }
+  89% { transform: translate(-4px, 1px) skewX(-6deg); filter: drop-shadow(4px 0 0 rgba(255, 0, 90, 0.85)) drop-shadow(-4px 0 0 rgba(0, 230, 255, 0.85)); }
+  91% { transform: translate(4px, -1px) skewX(5deg); filter: drop-shadow(-4px 0 0 rgba(255, 0, 90, 0.85)) drop-shadow(4px 0 0 rgba(0, 230, 255, 0.85)) contrast(1.3); }
+  93% { transform: translate(-2px, 0) scaleX(1.04); filter: hue-rotate(90deg) saturate(2.2); }
+  95% { transform: translate(3px, 1px) skewX(-3deg); filter: drop-shadow(3px 0 0 rgba(255, 0, 90, 0.75)) drop-shadow(-3px 0 0 rgba(0, 230, 255, 0.75)); }
+  97% { transform: none; filter: brightness(1.4); }
+}
+
+/* Which element moves: the circle itself, or the picture inside it. */
+:root[data-avatar='float'] :is(.profile__avatar, .not-found__avatar),
+.avatar-demo--float {
+  animation: avatar-fx-float 4.5s ease-in-out infinite;
+}
+
+:root[data-avatar='breathe'] :is(.profile__avatar, .not-found__avatar),
+.avatar-demo--breathe {
+  animation: avatar-fx-breathe 4s ease-in-out infinite;
+}
+
+:root[data-avatar='glow'] :is(.profile__avatar, .not-found__avatar),
+.avatar-demo--glow {
+  animation: avatar-fx-glow 3.2s ease-in-out infinite;
+}
+
+:root[data-avatar='pulse'] :is(.profile__avatar, .not-found__avatar),
+.avatar-demo--pulse {
+  animation: avatar-fx-pulse 2.4s cubic-bezier(0.2, 0.6, 0.3, 1) infinite;
+}
+
+/* Ring: a turning conic gradient shows through a gap around the photo. */
+:root[data-avatar='ring'] :is(.profile__avatar, .not-found__avatar),
+.avatar-demo--ring {
+  padding: 5px;
+  background: conic-gradient(from var(--avatar-angle), var(--accent), color-mix(in srgb, var(--accent) 10%, transparent) 40%, var(--accent) 55%, color-mix(in srgb, var(--accent) 10%, transparent) 90%, var(--accent));
+  animation: avatar-fx-ring 4s linear infinite;
+}
+
+:root[data-avatar='ring'] :is(.profile__avatar, .not-found__avatar) > :is(img, svg, span:not(.profile__avatar-overlay)),
+.avatar-demo--ring > span {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid var(--bg);
+  box-sizing: border-box;
+  background: var(--card-muted);
+}
+
+:root[data-avatar='wobble'] :is(.profile__avatar, .not-found__avatar),
+.avatar-demo--wobble {
+  animation: avatar-fx-wobble 6s ease-in-out infinite;
+  transform-origin: 50% 85%;
+}
+
+:root[data-avatar='wobble'] :is(.profile__avatar, .not-found__avatar):is(:hover, :active) {
+  animation: avatar-fx-bounce 0.6s ease-out;
+}
+
+:root[data-avatar='spin'] :is(.profile__avatar, .not-found__avatar),
+.avatar-demo--spin {
+  transition: transform 0.9s cubic-bezier(0.4, 1.6, 0.4, 1);
+}
+
+:root[data-avatar='spin'] :is(.profile__avatar, .not-found__avatar):is(:hover, :active),
+.avatar-option:is(:hover, :focus-visible) .avatar-demo--spin {
+  transform: rotate(360deg);
+}
+
+/* The generated avatar is over-scaled for its sway; not needed inside the ring. */
+:root[data-avatar='ring'] .avatar-gen {
+  transform: none;
+}
+
+:root[data-avatar='glitch'] :is(.profile__avatar, .not-found__avatar) > :is(img, svg),
+.avatar-demo--glitch > span {
+  animation: avatar-fx-glitch 4.5s steps(1, end) infinite;
+}
+
+/* Headings and images have no card chrome. */
+.tile-cell.type-heading {
+  background: none;
+  border: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+.tile-grid-empty {
+  color: var(--muted);
+  text-align: center;
+  padding: 48px 16px;
+  border: 2px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* ------------------------------ Site footer ----------------------------- */
+
+/* "Powered by Trellis": spans both layout columns, quiet until hovered. */
+.site-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: center;
+  padding-top: 8px;
+}
+
+.site-footer a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.site-footer a:hover,
+.site-footer a:focus-visible {
+  color: var(--text);
+  background: color-mix(in srgb, var(--card) 70%, transparent);
+}
+
+.site-footer b {
+  font-weight: 600;
+}
+
+.site-footer img {
+  border-radius: 4px;
+}
+
+/* ------------------------------- 404 page ------------------------------- */
+
+.not-found {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.not-found__card {
+  width: min(440px, 100%);
+  padding: 36px 28px 30px;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  text-align: center;
+  overflow: visible;
+  animation: tile-in 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.not-found__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  background: var(--card-muted);
+  color: var(--muted);
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 4;
+}
+
+.not-found__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.not-found__code {
+  margin: 0;
+  font-size: clamp(64px, 18vw, 96px);
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 45%, var(--text)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.not-found h1 {
+  margin: 0;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+}
+
+.not-found__text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  max-width: 34ch;
+}
+
+.not-found__text code {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--card-muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  word-break: break-all;
+}
+
+.not-found__home {
+  position: relative;
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 11px 20px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent, #fff);
+  font-weight: 600;
+  font-size: 15px;
+  transition: transform 0.2s, filter 0.2s;
+}
+
+.not-found__home:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+/* ------------------------- Avatar: black and white ------------------------ */
+/*
+ * Design → Avatar → Black & white (appearance.avatarTone = 'mono'): the
+ * photo or drawn avatar in greyscale on a plain circle with a hairline ring.
+ * The brightness lift turns a drawn avatar's pastel backdrop into near-white,
+ * so it reads as ink on paper.
+ */
+:root[data-avatar-tone='mono'] :is(.profile__avatar, .not-found__avatar) {
+  background: var(--card);
+  box-shadow: inset 0 0 0 1px var(--border), 0 0 0 1px var(--border);
+}
+
+:root[data-avatar-tone='mono'] :is(.profile__avatar, .not-found__avatar) > img,
+:root[data-avatar-tone='mono'] .avatar-demo img {
+  filter: grayscale(1) contrast(1.15) brightness(1.06);
+}

@@ -1,0 +1,39 @@
+{
+  "name": "trellis",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Trellis: a lightweight, self-hosted link-in-bio homepage with a drag-and-drop editor.",
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "node scripts/ensure-install.mjs && npm run build -w client && node scripts/package-release.mjs",
+    "build:client": "npm run build -w client",
+    "release": "node scripts/package-release.mjs",
+    "docs:pdf": "node scripts/build-docs-pdf.mjs",
+    "start": "npm run start -w server",
+    "set-password": "npm run set-password -w server",
+    "lint": "npm run lint -w client",
+    "test": "npm run build:client && node --test --test-concurrency=1 \"test/*.test.mjs\"",
+    "test:quick": "node --test --test-concurrency=1 \"test/unit.test.mjs\" \"test/api.test.mjs\" \"test/update.test.mjs\"",
+    "admin-url": "npm run admin-url -w server --",
+    "backup": "npm run backup -w server --",
+    "restore": "npm run restore -w server --",
+    "update": "npm run update -w server --",
+    "reset-2fa": "npm run reset-2fa -w server",
+    "sign-out-all": "npm run sign-out-all -w server"
+  },
+  "devDependencies": {
+    "archiver": "^7.0.1",
+    "axe-core": "^4.10.3",
+    "concurrently": "^9.1.2",
+    "marked": "^15.0.12",
+    "pagedjs": "^0.4.3",
+    "playwright-core": "^1.64.0"
+  },
+  "engines": {
+    "node": ">=22.9"
+  }
+}

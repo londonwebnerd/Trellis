@@ -1,0 +1,83 @@
+# ─────────────────────────────────────────────────────────────
+#  Trellis — files that must never be committed
+# ─────────────────────────────────────────────────────────────
+
+# Server data: your page, password hash, session key, the secret
+# editor path, Instagram token and uploaded images. Back this folder
+# up separately; never commit it (it contains secrets).
+server/data/
+data/
+
+# Environment files (passwords, tokens, secrets). Keep the example.
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+.npm/
+.pnpm-store/
+.yarn/
+!.yarn/releases
+
+# Build output
+client/dist/
+dist/
+*.tsbuildinfo
+.vite/
+
+# Logs and runtime files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.pid
+*.seed
+*.pid.lock
+
+# Test / coverage output
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# Caches
+.cache/
+.eslintcache
+.stylelintcache
+
+# Editors and IDEs
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Archives, backups and leftovers
+*.tar.gz
+*.tgz
+*.zip
+
+# Release packages built by npm run build
+release/
+trellis-backup-*.json
+_to_delete/
+
+# Temporary file written by npm run docs:pdf
+docs/.docs-book.html

@@ -1,0 +1,13 @@
+{
+  "trellisPreset": 1,
+  "name": "Studio",
+  "theme": "light",
+  "accent": "#111111",
+  "appearance": {
+    "colors": { "bg": "#f4f4f2", "card": "#ffffff", "text": "#111111", "muted": "#6b6b6b" },
+    "cardStyle": "hairline",
+    "radius": 4,
+    "font": "grotesk",
+    "animation": "subtle"
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@trellis/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Tiny Express backend: serves the built client, stores the page as JSON, handles auth, uploads and social feed proxies.",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch-path=src src/index.js",
+    "start": "node src/index.js",
+    "set-password": "node scripts/set-password.js",
+    "admin-url": "node scripts/admin-url.js",
+    "backup": "node scripts/backup.js",
+    "restore": "node scripts/restore.js",
+    "update": "node scripts/update.js",
+    "reset-2fa": "node scripts/reset-2fa.js",
+    "sign-out-all": "node scripts/sign-out-all.js"
+  },
+  "dependencies": {
+    "@dicebear/avataaars": "^9.4.2",
+    "@dicebear/bottts": "^9.4.2",
+    "@dicebear/core": "^9.4.3",
+    "@dicebear/glass": "^9.4.2",
+    "@dicebear/lorelei": "^9.4.2",
+    "@dicebear/notionists": "^9.4.2",
+    "@dicebear/open-peeps": "^9.4.2",
+    "@dicebear/pixel-art": "^9.4.2",
+    "@dicebear/shapes": "^9.4.2",
+    "@dicebear/thumbs": "^9.4.2",
+    "express": "^5.1.0",
+    "nodemailer": "^10.1.0"
+  }
+}
