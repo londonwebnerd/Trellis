@@ -102,7 +102,13 @@ function zip(file) {
     archive.on('warning', reject);
     archive.on('error', reject);
     archive.pipe(out);
-    archive.directory(STAGE, name);
+    // Store ordinary permissions whatever they are on this machine: files
+    // that were private to the builder (600) made the server unable to read
+    // its own code. Executables keep their x bit.
+    archive.directory(STAGE, name, (entry) => {
+      const exec = entry.stats && entry.stats.mode & 0o111;
+      return { ...entry, mode: entry.stats?.isDirectory() ? 0o755 : exec ? 0o755 : 0o644 };
+    });
     archive.finalize();
   });
 }

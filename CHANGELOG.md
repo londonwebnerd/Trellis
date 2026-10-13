@@ -8,6 +8,9 @@
   to read.
 - The download links in the share dialog use the contrast-checked accent,
   like links in text cards, instead of the raw accent colour.
+- Release zips always store normal file permissions, and updates make the
+  code readable by the app. A zip built from files that were private to
+  your own account installed fine but then couldn't start.
 
 ## 1.0.1 (13 October 2026)
 

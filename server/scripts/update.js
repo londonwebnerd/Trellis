@@ -194,6 +194,7 @@ function fixPermissions(dir, env) {
   if (!fs.existsSync(script) || !user || user === 'root' || !inside(env.dataDir, dir)) {
     // Data elsewhere (multi-site): just make the code root-owned and readable.
     spawnSync('chown', ['-R', 'root:root', dir], { stdio: 'inherit' });
+    if (!inside(env.dataDir, dir)) spawnSync('chmod', ['-R', 'u+rwX,go+rX,go-w', dir], { stdio: 'inherit' });
     return;
   }
   spawnSync('sh', [script, dir, user], { stdio: 'inherit' });

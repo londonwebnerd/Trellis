@@ -16,6 +16,11 @@ id "$APP_USER" >/dev/null 2>&1 || { echo "No such user: $APP_USER" >&2; exit 1; 
 APP_GROUP="$(id -gn "$APP_USER")"
 
 chown -R root:root "$DIR"
+# The code must be readable by the app: a zip built from files that were
+# private to someone's own account (mode 600) would otherwise fail to start.
+# server/data and .env are left alone here and locked down below.
+find "$DIR" -path "$DIR/server/data" -prune -o -path "$DIR/.env" -prune -o -type d -exec chmod 755 {} +
+find "$DIR" -path "$DIR/server/data" -prune -o -path "$DIR/.env" -prune -o -type f -exec chmod u+rw,go+r,go-w {} +
 mkdir -p "$DIR/server/data"
 chown -R "$APP_USER:$APP_GROUP" "$DIR/server/data"
 chmod 700 "$DIR/server/data"
