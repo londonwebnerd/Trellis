@@ -38,9 +38,10 @@ export function onAccent(hex = '') {
  * otherwise vanish on white. Keep in sync with client/src/lib/appearance.js.
  * @param {string} accent #rrggbb
  * @param {string} card #rrggbb card colour the link sits on
+ * @param {number} [min] contrast ratio to reach
  * @returns {string} #rrggbb
  */
-export function readableLink(accent, card) {
+export function readableLink(accent, card, min = 5.5) {
   const hex = (h) => (/^#[0-9a-f]{6}$/i.test(h || '') ? h : null);
   const a = hex(accent);
   const c = hex(card);
@@ -56,9 +57,22 @@ export function readableLink(accent, card) {
     const m = base.map((v, i) => Math.round(v + (target[i] - v) * t));
     // 5.5 rather than 4.5: Flat and Glass cards are a little darker or
     // lighter than the card colour itself, so leave headroom.
-    if (ratio(m, bg) >= 5.5) return `#${m.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+    if (ratio(m, bg) >= min) return `#${m.map((v) => v.toString(16).padStart(2, '0')).join('')}`;
   }
   return target[0] ? '#ffffff' : '#000000';
+}
+
+/**
+ * The muted (secondary text) colour, nudged towards the text colour's end
+ * of the scale until it reads on both the cards and the page background.
+ * Keep in sync with client/src/lib/appearance.js.
+ * @param {{ muted?: string, card?: string, bg?: string }} colors
+ */
+export function readableMuted({ muted, card, bg } = {}) {
+  if (!muted) return muted;
+  let m = card ? readableLink(muted, card, 5.2) : muted;
+  if (bg) m = readableLink(m, bg, 4.8);
+  return m;
 }
 
 /**
@@ -79,7 +93,7 @@ export function cssVars(settings) {
   if (a.colors.bg) vars['--bg'] = a.colors.bg;
   if (a.colors.card) vars['--card'] = a.colors.card;
   if (a.colors.text) vars['--text'] = a.colors.text;
-  if (a.colors.muted) vars['--muted'] = a.colors.muted;
+  if (a.colors.muted) vars['--muted'] = readableMuted(a.colors);
   // Link colour in text cards, per theme (base.css picks one). Card colours
   // are the theme defaults from client/src/lib/appearance.js (THEME_DEFAULTS).
   vars['--link-light'] = readableLink(settings.accent, a.colors.card || '#ffffff');

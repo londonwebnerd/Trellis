@@ -1,6 +1,6 @@
 {
   "name": "@trellis/client",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "React front end: the public page and its drag-and-drop editor.",

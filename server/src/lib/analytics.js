@@ -33,7 +33,12 @@ const FLUSH_MS = 15_000;
 /** @type {{ days: Record<string, any> }} */
 let store = { days: {} };
 let dirty = false;
-let salt = { day: '', value: '', seen: new Set() };
+// Today's random key, and when each (hashed) visitor last viewed the page or
+// clicked a card. Kept in memory only and thrown away at midnight.
+let salt = { day: '', value: '', seen: new Map(), clicks: new Map() };
+const VIEW_GAP_MS = 30 * 60_000; // reloads within 30 minutes are one view
+const CLICK_GAP_MS = 5 * 60_000; // repeat clicks on one card within 5 minutes are one click
+const MAX_TRACKED = 200_000;
 
 try {
   store = JSON.parse(fs.readFileSync(FILE, 'utf8'));
@@ -116,16 +121,42 @@ const optedOut = (req) => req.get('DNT') === '1' || req.get('Sec-GPC') === '1';
 
 /* ------------------------------- Counting ------------------------------ */
 
-/** Unique-visitor check for today, without storing anything identifying. */
-function isNewVisitor(req) {
+/** Today's anonymous visitor hash: IP and browser with a daily random key. */
+function visitorHash(req) {
   const day = today();
-  if (salt.day !== day) salt = { day, value: crypto.randomBytes(16).toString('hex'), seen: new Set() };
-  const hash = crypto.createHash('sha256').update(`${salt.value}|${req.ip}|${req.get('User-Agent') || ''}`).digest('base64url').slice(0, 16);
-  if (salt.seen.has(hash)) return false;
-  // Bounded memory under a flood of fake addresses: past the cap, everyone
-  // counts as a returning visitor until tomorrow.
-  if (salt.seen.size >= 200_000) return false;
-  salt.seen.add(hash);
+  if (salt.day !== day) salt = { day, value: crypto.randomBytes(16).toString('hex'), seen: new Map(), clicks: new Map() };
+  return crypto.createHash('sha256').update(`${salt.value}|${req.ip}|${req.get('User-Agent') || ''}`).digest('base64url').slice(0, 16);
+}
+
+/**
+ * Whether a view counts, and whether it's a new visitor today. A script
+ * reloading the page all day only adds one view every 30 minutes.
+ * @returns {{ count: boolean, isNew: boolean }}
+ */
+function checkView(req) {
+  const hash = visitorHash(req);
+  const now = Date.now();
+  const last = salt.seen.get(hash);
+  if (last === undefined) {
+    // Bounded memory under a flood of fake addresses: past the cap, views
+    // still count but everyone is a returning visitor until tomorrow.
+    if (salt.seen.size >= MAX_TRACKED) return { count: true, isNew: false };
+    salt.seen.set(hash, now);
+    return { count: true, isNew: true };
+  }
+  if (now - last < VIEW_GAP_MS) return { count: false, isNew: false };
+  salt.seen.set(hash, now);
+  return { count: true, isNew: false };
+}
+
+/** Whether a click on this card counts (once per visitor every 5 minutes). */
+function checkClick(req, tile) {
+  const key = `${visitorHash(req)}|${tile}`;
+  const now = Date.now();
+  const last = salt.clicks.get(key);
+  if (last !== undefined && now - last < CLICK_GAP_MS) return false;
+  if (last === undefined && salt.clicks.size >= MAX_TRACKED) return true;
+  salt.clicks.set(key, now);
   return true;
 }
 
@@ -138,8 +169,10 @@ export function recordEvent(req, event) {
   if (optedOut(req)) return false;
   const day = bucket(today());
   if (event.type === 'view') {
+    const { count, isNew } = checkView(req);
+    if (!count) return false;
     day.v += 1;
-    if (isNewVisitor(req)) day.u += 1;
+    if (isNew) day.u += 1;
     bump(day.ref, referrerHost(event.referrer, req.hostname));
     bump(day.cty, country(req));
     bump(day.lang, language(req.get('Accept-Language')));
@@ -149,6 +182,7 @@ export function recordEvent(req, event) {
     bump(day.os, os);
     for (const k of ['source', 'medium', 'campaign']) bump(day.utm[k], typeof event.utm?.[k] === 'string' ? event.utm[k].toLowerCase().trim() : '');
   } else if (event.type === 'click' && event.tile) {
+    if (!checkClick(req, event.tile)) return false;
     day.c += 1;
     bump(day.tiles, event.tile);
   } else if (event.type === 'link' && event.slug) {

@@ -21,6 +21,10 @@ the IP address and browser with a random key that changes every day and is
 never saved. No IP addresses are stored, only daily totals, and days older
 than 400 are deleted. Days run midnight to midnight UTC.
 
+Reloading the page doesn't inflate the numbers: the same visitor counts as
+one view per 30 minutes, and clicking the same card again within five
+minutes counts once.
+
 You can switch statistics off under **Settings > Statistics**.
 
 ### Campaigns

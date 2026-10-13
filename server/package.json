@@ -1,6 +1,6 @@
 {
   "name": "@trellis/server",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "private": true,
   "type": "module",
   "description": "Tiny Express backend: serves the built client, stores the page as JSON, handles auth, uploads and social feed proxies.",

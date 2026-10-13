@@ -312,3 +312,39 @@ describe('editor', { skip }, () => {
     await two.context.close();
   });
 });
+
+describe('small cards and long dialogs', { skip }, () => {
+  test('one-column buttons keep their title; long text scrolls by keyboard; dialog buttons stay on screen', async () => {
+    const { page: before } = (await s.api('GET', '/api/draft', { headers: ed })).body;
+    const page = structuredClone(before);
+    page.tiles = [
+      { id: 'sm1', type: 'link', w: 1, h: 1, data: { url: 'https://www.linkedin.com/in/someone', title: 'LinkedIn', subtitle: 'someone' } },
+      { id: 'tx1', type: 'text', w: 2, h: 2, data: { html: `<p>${'A long paragraph. '.repeat(60)}</p>` } },
+      ...before.tiles,
+    ];
+    assert.equal((await s.api('POST', '/api/draft/publish', { headers: ed, json: page })).status, 200);
+
+    for (const width of [375, 1280]) {
+      const { page: p, context } = await open('/', { width, height: 800 });
+      await p.waitForSelector('.tile-cell');
+      const card = p.locator('.tile-cell.w-1.h-1').first();
+      assert.equal(await card.locator('.tile-card__subtitle').isVisible(), false, `subtitle hidden at ${width}px`);
+      const title = await card.locator('.tile-card__link').evaluate((a) => ({ shown: a.scrollWidth <= a.clientWidth + 1, text: a.textContent }));
+      assert.ok(title.shown, `"${title.text}" fits at ${width}px`);
+      assert.equal(await p.locator('.tile-text').first().getAttribute('tabindex'), '0', 'scrolling text is focusable');
+      await context.close();
+    }
+
+    const { page: p, context } = await open(s.adminPath, { width: 1280, height: 800 });
+    await signIn(p);
+    await p.locator('.tile-cell', { hasText: 'A long paragraph' }).first().hover();
+    await p.locator('.tile-cell', { hasText: 'A long paragraph' }).first().locator('button[aria-label="Edit tile"]').click({ force: true });
+    const footer = p.locator('dialog[open] .modal__footer');
+    await footer.waitFor();
+    const box = await footer.boundingBox();
+    assert.ok(box.y + box.height <= 800 + 1, `dialog buttons on screen (bottom at ${Math.round(box.y + box.height)}px)`);
+    await p.keyboard.press('Escape');
+    await context.close();
+    await s.api('POST', '/api/draft/publish', { headers: ed, json: before });
+  });
+});

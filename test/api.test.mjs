@@ -264,6 +264,15 @@ describe('statistics', () => {
     assert.equal(body.tiles[0].count, 1);
   });
 
+  test('reloading or re-clicking all day does not inflate the numbers', async () => {
+    await s.api('DELETE', '/api/stats', { headers: ed });
+    const ua = { 'User-Agent': `${CHROME} Reloader/1` };
+    for (let i = 0; i < 25; i++) await beacon({ type: 'view' }, ua);
+    for (let i = 0; i < 25; i++) await beacon({ type: 'click', tile: 'st1' }, ua);
+    const { body } = await s.api('GET', '/api/stats?days=7', { headers: ed });
+    assert.deepEqual(body.totals, { views: 1, visitors: 1, clicks: 1 });
+  });
+
   test('turned off: nothing is counted', async () => {
     const { page } = await draft();
     page.settings = { ...page.settings, analytics: false };

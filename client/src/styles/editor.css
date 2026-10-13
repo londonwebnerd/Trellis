@@ -318,6 +318,12 @@ textarea.input {
   gap: 8px;
   padding: 14px 22px;
   border-top: 1px solid var(--border);
+  /* Stays at the bottom of a long dialog, so Done and Delete are always in
+     reach on a laptop or phone without scrolling down to find them. */
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--card);
 }
 
 /* ------------------------------ Add menu -------------------------------- */
@@ -827,6 +833,12 @@ textarea.profile__name {
   background: var(--card);
   border: 1px solid var(--border);
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.2);
+  /* A phone held sideways is shorter than the menu: scroll inside it
+     rather than pushing the top items off the screen. */
+  max-height: calc(100vh - 110px);
+  max-height: calc(100dvh - 110px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Phones: the toolbar spans the screen, so the menu is placed against the

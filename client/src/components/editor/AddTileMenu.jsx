@@ -50,7 +50,8 @@ export default function AddTileMenu({ open, onClose, onAdd }) {
         <input
           className="paste-box__input"
           autoFocus
-          placeholder="Paste a link, @user@instance or email…"
+          /* The long hint is cut off on phones, so they get a shorter one. */
+          placeholder={window.matchMedia('(max-width: 560px)').matches ? 'Paste a link or email…' : 'Paste a link, @user@instance or email…'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           aria-label="Link, handle or email"

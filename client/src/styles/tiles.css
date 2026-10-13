@@ -146,6 +146,26 @@
   border-radius: 10px;
 }
 
+/* A one-column button is too narrow for title, subtitle and arrow on one
+   line: the title got squeezed to "Li…". Give it all the room instead. */
+@container cell (max-width: 260px) {
+  .tile-card--bar {
+    gap: 10px;
+    padding: 0 12px;
+  }
+
+  .tile-card--bar .tile-card__subtitle,
+  .tile-card--bar > .tile-card__arrow {
+    display: none;
+  }
+
+  .tile-card--bar .tile-card__link {
+    font-size: 14px;
+    -webkit-line-clamp: 2;
+    overflow-wrap: anywhere;
+  }
+}
+
 .tile-card--wide:has(.tile-card__preview) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
@@ -1214,6 +1234,12 @@
   font-size: 11px;
 }
 
+/* The unit labels sit on the tinted digit boxes, where grey text dropped to
+   about 4:1. A shade of the text colour reads as secondary but stays clear. */
+.countdown__clock small {
+  color: color-mix(in srgb, var(--text) 75%, var(--card-muted));
+}
+
 .countdown__done {
   margin: 0;
   font-size: 20px;
@@ -1248,6 +1274,13 @@
 
 .countdown--bar .countdown__clock small {
   display: none;
+}
+
+/* On a solid accent button the digit boxes are outlined rather than
+   tinted: a lighter tint pulled white digits under 4.5:1. */
+:root[data-button-fill='solid'] .tile-cell.shape-bar:not(.has-own-colors) .countdown__clock span {
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--border);
 }
 
 .countdown--sm .countdown__clock {
@@ -1959,7 +1992,9 @@
   padding: 0;
   border: 0;
   background: none;
-  color: var(--accent);
+  /* The accent adjusted for contrast, as in text cards: a bright accent
+     on white was only 3.6:1. */
+  color: var(--link, var(--accent));
   font: inherit;
   font-weight: 600;
   text-decoration: underline;

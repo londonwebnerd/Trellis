@@ -25,11 +25,11 @@ files.
 The server needs Node.js 22.9 or newer and `unzip`.
 
 ```bash
-scp release/trellis-1.0.0.zip you@yourserver:/tmp/
+scp release/trellis-1.0.2.zip you@yourserver:/tmp/
 
 # then, on the server:
-cd /tmp && unzip -q trellis-1.0.0.zip
-sudo mv trellis-1.0.0 /opt/trellis
+cd /tmp && unzip -q trellis-1.0.2.zip
+sudo mv trellis-1.0.2 /opt/trellis
 cd /opt/trellis
 sudo cp .env.example .env
 sudo sh deploy/fix-permissions.sh
@@ -154,7 +154,7 @@ Build the new zip, copy it over and run:
 
 ```bash
 cd /opt/trellis
-sudo npm run update -- /tmp/trellis-1.0.0.zip
+sudo npm run update -- /tmp/trellis-1.0.2.zip
 ```
 
 The update backs up the data folder first, swaps in the new code (keeping
@@ -179,18 +179,18 @@ several sites from one install, for example
 ### From a pre-release build
 
 Servers running one of the test builds from before 1.0 (versions 1.2 to
-1.4.6) see 1.0.0 as older and stop, so add `--force` the first time:
+1.4.6) see 1.0.x as older and stop, so add `--force` the first time:
 
 ```bash
-sudo npm run update -- --force /tmp/trellis-1.0.0.zip
+sudo npm run update -- --force /tmp/trellis-1.0.2.zip
 ```
 
 Builds older than 1.2 don't have the update command yet. Run the one inside
 the new zip instead:
 
 ```bash
-cd /tmp && unzip -q -o trellis-1.0.0.zip
-sudo node /tmp/trellis-1.0.0/server/scripts/update.js --dir /opt/trellis --force /tmp/trellis-1.0.0.zip
+cd /tmp && unzip -q -o trellis-1.0.2.zip
+sudo node /tmp/trellis-1.0.2/server/scripts/update.js --dir /opt/trellis --force /tmp/trellis-1.0.2.zip
 ```
 
 Pages from older versions are converted automatically.
@@ -199,10 +199,10 @@ Pages from older versions are converted automatically.
 <summary>Updating by hand</summary>
 
 ```bash
-cd /tmp && unzip -q -o trellis-1.0.0.zip
+cd /tmp && unzip -q -o trellis-1.0.2.zip
 sudo rsync -a --delete \
   --exclude '/server/data/' --exclude '/.env' --exclude '/presets/' \
-  /tmp/trellis-1.0.0/ /opt/trellis/
+  /tmp/trellis-1.0.2/ /opt/trellis/
 sudo sh /opt/trellis/deploy/fix-permissions.sh
 sudo systemctl restart trellis
 ```

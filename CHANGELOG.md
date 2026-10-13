@@ -1,5 +1,34 @@
 # Changelog
 
+## 1.0.2 (13 October 2026)
+
+- The editor's More menu scrolls when a phone is held sideways. Before, the
+  bottom items (Statistics, for one) were pushed off the screen.
+- The small "days, hours, min, sec" labels on countdown cards are easier
+  to read.
+- The download links in the share dialog use the contrast-checked accent,
+  like links in text cards, instead of the raw accent colour.
+
+## 1.0.1 (13 October 2026)
+
+Small fixes after going through the page and editor at every screen size.
+
+- One-column button cards (LinkedIn, Email and so on at the smallest size)
+  showed "Li…" because the subtitle and arrow took the room. They now show
+  the full title, over two lines if needed.
+- The Delete and Done buttons stay at the bottom of the card editor instead
+  of disappearing below the edge of a laptop or phone screen.
+- Grey secondary text is darkened slightly where a design left it too
+  faint to read comfortably (Sunset most of all, also Sage, Dusk, Blossom
+  and a few others). Your own colour choices get the same check.
+- Countdown digits on solid-colour button cards (Pop, Citrus) are easier
+  to read.
+- Long text cards can be scrolled with the keyboard.
+- Reloading the page or clicking the same card over and over no longer
+  inflates the statistics: one view per visitor every 30 minutes, one
+  click per card every five minutes.
+- A shorter hint in the Add box on phones, so it isn't cut off.
+
 ## 1.0.0 (13 October 2026)
 
 First public release.

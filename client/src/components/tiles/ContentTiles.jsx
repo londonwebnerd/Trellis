@@ -2,7 +2,7 @@
  * Non-social tiles: media players, email, rich text, link lists, headings
  * and images. Each receives `{ tile, shape }`.
  */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   appleMusicEmbedUrl,
   spotifyEmbedUrl,
@@ -140,9 +140,27 @@ export function TextTile({ tile, shape }) {
     () => renderRichText(html ? cleanRichHtml(html) : plainTextToHtml(text)),
     [html, text],
   );
+  // Long text scrolls inside the card. Make it focusable then, so it can be
+  // scrolled with the keyboard too (Safari won't otherwise).
+  const ref = useRef(null);
+  const [scrolls, setScrolls] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || shape === "bar") return undefined;
+    const check = () => setScrolls(el.scrollHeight > el.clientHeight + 1);
+    check();
+    const ro = new ResizeObserver(check);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [shape, content]);
   if (!html && !text) return <EmptyTile label="Click to write something" />;
   return (
-    <div className="tile-text rich-text" dir="auto">
+    <div
+      ref={ref}
+      className="tile-text rich-text"
+      dir="auto"
+      {...(scrolls && { tabIndex: 0, role: "region", "aria-label": "Text" })}
+    >
       {/* A one-row card shows the text as a single line, cut with "…". */}
       {shape === "bar" ? (
         <div className="tile-text__line">{content}</div>
